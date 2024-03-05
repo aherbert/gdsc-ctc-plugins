@@ -110,7 +110,7 @@ final class CtcHelper {
     // This is where we avoid the call to ClassifyLabels for each
     // frame in the GT and result masks and use the node mapping.
 
-    // Process records (ID,t,class) in time order:
+    // Process records [resID t gtID] in time order:
     map.sort(Comparator.comparingInt(x -> x[1]));
     int from = 0;
     int time = map.get(from)[1];
@@ -144,7 +144,7 @@ final class CtcHelper {
    * @param gtSet the ground-truth set
    */
   @SuppressWarnings("unchecked")
-  private static void classfifyLabels(List<int[]> map, List<int[]> gtTracks, TrackDataCache cache,
+  static void classfifyLabels(List<int[]> map, List<int[]> gtTracks, TrackDataCache cache,
       int time, BitSet gtSet) {
     // Assume the size of the map is the number of result labels.
     // Count the number of GT labels in this frame.

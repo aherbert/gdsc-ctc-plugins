@@ -40,7 +40,9 @@ import java.util.NoSuchElementException;
 import net.celltrackingchallenge.measures.TRA;
 import net.celltrackingchallenge.measures.TrackDataCache;
 import net.celltrackingchallenge.measures.TrackDataCache.TemporalLevel;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -58,6 +60,21 @@ class CtcHelperTest {
       // Do nothing
     }
   };
+
+  /** Path to an empty file. */
+  private static Path empty;
+
+  @BeforeAll
+  static void setup() throws IOException {
+    empty = Files.createTempFile("empty", "txt");
+  }
+
+  @AfterAll
+  static void teardown() throws IOException {
+    if (empty != null) {
+      Files.delete(empty);
+    }
+  }
 
   @Test
   void testCreateTemporalLevel() {
@@ -130,12 +147,10 @@ class CtcHelperTest {
     Path resTracks = null;
     Path gtTracks = null;
     Path map = null;
-    Path empty = null;
     try {
       resTracks = Files.createTempFile("res", "txt");
       gtTracks = Files.createTempFile("gt", "txt");
       map = Files.createTempFile("map", "txt");
-      empty = Files.createTempFile("empty", "txt");
 
       Files.write(resTracks, Arrays.asList("1 0 2 0", "2 3 5 1"));
       Files.write(gtTracks, Arrays.asList("10 0 1 0", "12 2 5 10", "44 1 1 0"));
@@ -175,14 +190,11 @@ class CtcHelperTest {
       if (map != null) {
         Files.delete(map);
       }
-      if (empty != null) {
-        Files.delete(empty);
-      }
     }
   }
 
   @Test
-  void testTraSampleData() throws IOException {
+  void testAogmTraSampleData() throws IOException {
     final TRA tra = new TRA(LOG);
 
     tra.doConsistencyCheck = true;
@@ -199,5 +211,35 @@ class CtcHelperTest {
 
     // Validated result using original CTC ground-truth and result data
     Assertions.assertEquals(20, aogm);
+  }
+
+  @Test
+  void testAogmCalculator() throws IOException {
+    final TRA tra = new TRA(LOG);
+
+    tra.doConsistencyCheck = true;
+    tra.doLogReports = true;
+    tra.doMatchingReports = false;
+    tra.doAOGM = true;
+    tra.penalty = tra.new PenaltyConfig(5, 10, 1, 1, 1.5, 1.0);
+
+    final String gtPath = this.getClass().getResource("man_track.txt").getPath();
+    final String resPath = this.getClass().getResource("res_track.txt").getPath();
+    final String nodeMapping = this.getClass().getResource("map.txt").getPath();
+
+    final AogmCalculator calc = AogmCalculator.create(gtPath, tra, LOG, 10, 1.5);
+    final double aogm = calc.calculate(resPath, nodeMapping);
+
+    // Validated result using original CTC ground-truth and result data
+    Assertions.assertEquals(20, aogm);
+    Assertions.assertEquals(29926.5, calc.getAogmEmpty());
+    Assertions.assertEquals(0.9993316959885051, calc.getTra(aogm));
+
+    // Check empty files raise exceptions
+    String emptyFile = empty.toString();
+    Assertions.assertThrows(IllegalArgumentException.class,
+        () -> AogmCalculator.create(emptyFile, tra, LOG, 10, 1.5));
+    Assertions.assertThrows(IllegalArgumentException.class,
+        () -> calc.calculate(resPath, emptyFile));
   }
 }
