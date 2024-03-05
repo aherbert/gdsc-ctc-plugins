@@ -152,7 +152,7 @@ class CtcHelperTest {
       final String gtPath = gtTracks.toString();
       final String resPath = resTracks.toString();
       final String mapPath = map.toString();
-      final double aogm = tra.calculate(gtPath, resPath,
+      final double aogm = tra.calculate(null, null,
           CtcHelper.loadTrackDataCache(LOG, gtPath, resPath, mapPath));
 
       // Expected: 2 x wrong semantics (1.35) : 1 false nagative
@@ -194,7 +194,7 @@ class CtcHelperTest {
     final String gtPath = this.getClass().getResource("man_track.txt").getPath();
     final String resPath = this.getClass().getResource("res_track.txt").getPath();
     final String nodeMapping = this.getClass().getResource("map.txt").getPath();
-    final double aogm = tra.calculate(gtPath, resPath,
+    final double aogm = tra.calculate(null, null,
         CtcHelper.loadTrackDataCache(LOG, gtPath, resPath, nodeMapping));
 
     // Validated result using original CTC ground-truth and result data

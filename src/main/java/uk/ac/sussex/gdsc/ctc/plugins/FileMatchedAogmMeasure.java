@@ -146,8 +146,9 @@ public class FileMatchedAogmMeasure implements Command {
 
       // do the calculation
       // XXX: Here we load our own TrackDataCache with a text file to define the mapping
-      // between result tracks and ground-truth tracks.
-      aogm = tra.calculate(gtPath.getPath(), resPath.getPath(),
+      // between result tracks and ground-truth tracks. The cache returns as
+      // valid so we do not pass in paths to the calculate method.
+      aogm = tra.calculate(null, null,
           CtcHelper.loadTrackDataCache(log, gtPath.getPath(), resPath.getPath(), mapPath.getPath()));
 
       // do not report anything explicitly (unless special format for parsing is
