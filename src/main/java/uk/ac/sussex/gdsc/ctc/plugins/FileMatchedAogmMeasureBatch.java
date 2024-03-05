@@ -26,9 +26,16 @@
  */
 package uk.ac.sussex.gdsc.ctc.plugins;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.stream.Stream;
 import net.celltrackingchallenge.measures.TRA;
-import org.scijava.ItemIO;
 import org.scijava.command.Command;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
@@ -36,17 +43,20 @@ import org.scijava.plugin.Plugin;
 import org.scijava.widget.FileWidget;
 
 /**
- * This class is a copy implementation of
- * {@code net.celltrackingchallenge.fiji.plugins.plugin_AOGMmeasure}. Instead of loading all the
- * tiff mask images and computing the overlap between masks to obtain the mapping from result tracks
- * to ground-truth track, it loads the mapping from file. Computation of the AOGM score is then
- * performed using the original code.
+ * Plugin to compute the AOGM measure on many result tracks against a single groud-truth.
+ *
+ * <p>Adapts the functionality in {@code net.celltrackingchallenge.fiji.plugins.plugin_AOGMmeasure}.
+ *
+ * <p>This class loads the mapping between result and ground-truth from file. Computation of the
+ * AOGM score is then performed using the original code. The plugin can be used when tracking has
+ * been performed many times on the same input (ground-truth) objects. The output tracks can then be
+ * compared with ground-truth tracks to determine the best tracking result.
  */
-@Plugin(type = Command.class, menuPath = "Plugins>Tracking>AOGM: Tracking measure (mapped)",
-    name = "CTC_AOGM_Mapped", headless = true,
+@Plugin(type = Command.class, menuPath = "Plugins>Tracking>AOGM: Tracking measure (mapped batch)",
+    name = "CTC_AOGM_Mapped_Batch", headless = true,
     description = "Calculates the AOGM tracking performance measure from the AOGM paper\n"
         + "using a mapping between result IDs and ground-truth IDs")
-public class FileMatchedAogmMeasure implements Command {
+public class FileMatchedAogmMeasureBatch implements Command {
 
   @Parameter
   private LogService log;
@@ -56,15 +66,16 @@ public class FileMatchedAogmMeasure implements Command {
       persistKey = "ctc_gt_tracks")
   private File gtPath;
 
-  @Parameter(label = "Path to computed result tracks:", style = FileWidget.OPEN_STYLE,
-      description = "Path should contain track text file with records: id start end parent",
-      persistKey = "ctc_res_tracks")
-  private File resPath;
+  @Parameter(label = "Path to result tracks folder:", style = FileWidget.DIRECTORY_STYLE,
+      description = "Contains track .txt file with records: id start end parent and "
+          + ".map.txt file with records: redId time gtId",
+      persistKey = "ctc_res_tracks_folder")
+  private File resFolderPath;
 
-  @Parameter(label = "Path to result to ground-truth mapping:", style = FileWidget.OPEN_STYLE,
-      description = "Path should contain mapping text file with records: resId time gtId",
-      persistKey = "ctc_map")
-  private File mapPath;
+  @Parameter(label = "Path to saved results:", style = FileWidget.OPEN_STYLE,
+      description = "Path to save the results with records: file AOGM AOGMe TRA",
+      persistKey = "ctc_aogm_results")
+  private File resultPath;
 
   @Parameter(label = "Penalty preset:",
       choices = {"Cell Tracking Challenge", "use the values below"}, callback = "onPenaltyChange")
@@ -92,29 +103,15 @@ public class FileMatchedAogmMeasure implements Command {
 
   @Parameter(label = "Consistency check of input data:",
       description = "Checks multiple consistency-oriented criteria on both input and GT data.")
-  private boolean doConsistencyCheck = true;
+  private boolean doConsistencyCheck = false;
 
   @Parameter(label = "Verbose report on tracking errors:",
       description = "Logs all discrepancies (and organizes them by category) between the input and GT data.")
-  private boolean doLogReports = true;
+  private boolean doLogReports = false;
 
   @Parameter(label = "Verbose report on matching of segments:",
       description = "Logs which RES/GT segment maps onto which GT/RES in the data.")
   private boolean doMatchingReports = false;
-
-  @Parameter(label = "Do 1.0-min(AOGM,AOGM_empty)/AOGM_empty (TRA):",
-      description = "The Cell Tracking Challenge TRA is exactly a normalized AOGM with specific penalties. If checked, returns between 0.0 to 1.0, higher is better.")
-  private boolean doTRAnormalization = false;
-
-  //hidden output values
-  @Parameter(type = ItemIO.OUTPUT)
-  String gtTracks;
-  @Parameter(type = ItemIO.OUTPUT)
-  String resTracks;
-  @Parameter(type = ItemIO.OUTPUT)
-  String resMap;
-  @Parameter(type = ItemIO.OUTPUT)
-  private double aogm = -1;
 
   @SuppressWarnings("unused")
   private void onPenaltyChange() {
@@ -137,33 +134,55 @@ public class FileMatchedAogmMeasure implements Command {
 
   @Override
   public void run() {
-    gtTracks  = gtPath.getPath();
-    resTracks = resPath.getPath();
-    resMap = mapPath.getPath();
+    try (BufferedWriter bw = Files.newBufferedWriter(resultPath.toPath());
+        PrintWriter pw = new PrintWriter(bw);
+        Stream<Path> files = Files.list(resFolderPath.toPath())) {
 
-    try {
       // start up the worker class
       final TRA tra = new TRA(log);
 
       // set up its operational details
+      // Note: the calculator always computes the AOGM
       tra.doConsistencyCheck = doConsistencyCheck;
       tra.doLogReports = doLogReports;
       tra.doMatchingReports = doMatchingReports;
-      tra.doAOGM = !doTRAnormalization;
 
       // also the AOGM weights
       final TRA.PenaltyConfig penalty = tra.new PenaltyConfig(p1, p2, p3, p4, p5, p6);
       tra.penalty = penalty;
 
       // do the calculation
-      // XXX: Here we load our own TrackDataCache with a text file to define the mapping
-      // between result tracks and ground-truth tracks. The cache returns as
-      // valid so we do not pass in paths to the calculate method.
-      aogm = tra.calculate(null, null,
-          CtcHelper.loadTrackDataCache(log, gtTracks, resTracks, resMap));
+      // Here we use our own calculator that caches ground-truth information for re-use.
+      final AogmCalculator calc = AogmCalculator.create(gtPath.getPath(), tra, log, p2, p5);
 
-      // do not report anything explicitly (unless special format for parsing is
-      // desired) as ItemIO.OUTPUT will make it output automatically
+      // Header
+      pw.println("# GT = " + gtPath.toString());
+      pw.println("# AOGM_e = " + calc.getAogmEmpty());
+      pw.println("# Result dir = " + resFolderPath.toString());
+      pw.println("Tracks,AOGM,TRA");
+
+      // Iterate over the [track.txt, track.map.txt] pairs
+      // Processing inside the stream throws unchecked IO exceptions
+      files.map(Path::toString).filter(s -> s.endsWith(".map.txt")).forEach(mapPath -> {
+        // Find corresponding .txt file
+        final String resPath = mapPath.replace(".map.txt", ".txt");
+        if (Files.isReadable(Paths.get(resPath))) {
+          try {
+            final double aogm = calc.calculate(resPath, mapPath);
+            pw.print(Paths.get(resPath).getFileName());
+            pw.print(',');
+            pw.print(aogm);
+            pw.print(',');
+            pw.println(calc.getTra(aogm));
+          } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        } else {
+          log.error(
+              String.format("Mapping file (%s) is missing track file (%s)", mapPath, resPath));
+        }
+      });
+
     } catch (final RuntimeException e) {
       log.error("AOGM problem: " + e.getMessage(), e);
     } catch (final Exception e) {

@@ -103,6 +103,7 @@ final class AogmCalculator {
       }
     };
     cache.LoadTrackFile(gtTracksPath, cache.gt_tracks);
+    cache.DetectForks(cache.gt_tracks, cache.gt_forks);
 
     // Cost to create the result from scratch
     // how many parental links to add
@@ -173,12 +174,14 @@ final class AogmCalculator {
     // resPath + "/res_track.txt"
     // Here we just have the track files themselves
     // cache.gt_tracks is already loaded
+    cache.res_tracks.clear();
     cache.LoadTrackFile(resTracksPath, cache.res_tracks);
 
     // This is where we avoid the call to ClassifyLabels for each
     // frame in the GT and result masks and use the node mapping.
 
     // Process records [resID t gtID] in time order:
+    cache.levels.clear();
     map.sort(Comparator.comparingInt(x -> x[1]));
     int from = 0;
     int time = map.get(from)[1];
@@ -194,7 +197,7 @@ final class AogmCalculator {
 
     // No exceptions raised for cache.levels.isEmpty() as we had a non-empty map
 
-    cache.DetectForks(cache.gt_tracks, cache.gt_forks);
+    cache.res_forks.clear();
     cache.DetectForks(cache.res_tracks, cache.res_forks);
 
     return tra.calculate(null, null, cache);

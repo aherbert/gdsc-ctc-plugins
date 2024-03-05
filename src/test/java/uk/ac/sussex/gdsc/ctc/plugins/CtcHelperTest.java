@@ -136,8 +136,7 @@ class CtcHelperTest {
     try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
         ObjectInputStream ois = new ObjectInputStream(bis)) {
       @SuppressWarnings("unchecked")
-      final
-      HashSet<Integer> s2 = (HashSet<Integer>) ois.readObject();
+      final HashSet<Integer> s2 = (HashSet<Integer>) ois.readObject();
       Assertions.assertEquals(s, s2);
     }
   }
@@ -167,8 +166,8 @@ class CtcHelperTest {
       final String gtPath = gtTracks.toString();
       final String resPath = resTracks.toString();
       final String mapPath = map.toString();
-      final double aogm = tra.calculate(null, null,
-          CtcHelper.loadTrackDataCache(LOG, gtPath, resPath, mapPath));
+      final double aogm =
+          tra.calculate(null, null, CtcHelper.loadTrackDataCache(LOG, gtPath, resPath, mapPath));
 
       // Expected: 2 x wrong semantics (1.35) : 1 false nagative
       Assertions.assertEquals(2 * 1.35 + 10, aogm);
@@ -206,8 +205,8 @@ class CtcHelperTest {
     final String gtPath = this.getClass().getResource("man_track.txt").getPath();
     final String resPath = this.getClass().getResource("res_track.txt").getPath();
     final String nodeMapping = this.getClass().getResource("map.txt").getPath();
-    final double aogm = tra.calculate(null, null,
-        CtcHelper.loadTrackDataCache(LOG, gtPath, resPath, nodeMapping));
+    final double aogm =
+        tra.calculate(null, null, CtcHelper.loadTrackDataCache(LOG, gtPath, resPath, nodeMapping));
 
     // Validated result using original CTC ground-truth and result data
     Assertions.assertEquals(20, aogm);
@@ -228,12 +227,16 @@ class CtcHelperTest {
     final String nodeMapping = this.getClass().getResource("map.txt").getPath();
 
     final AogmCalculator calc = AogmCalculator.create(gtPath, tra, LOG, 10, 1.5);
-    final double aogm = calc.calculate(resPath, nodeMapping);
 
-    // Validated result using original CTC ground-truth and result data
-    Assertions.assertEquals(20, aogm);
-    Assertions.assertEquals(29926.5, calc.getAogmEmpty());
-    Assertions.assertEquals(0.9993316959885051, calc.getTra(aogm));
+    // Repeatable
+    for (int i = 0; i < 2; i++) {
+      final double aogm = calc.calculate(resPath, nodeMapping);
+
+      // Validated result using original CTC ground-truth and result data
+      Assertions.assertEquals(20, aogm);
+      Assertions.assertEquals(29926.5, calc.getAogmEmpty());
+      Assertions.assertEquals(0.9993316959885051, calc.getTra(aogm));
+    }
 
     // Check empty files raise exceptions
     String emptyFile = empty.toString();
