@@ -18,8 +18,8 @@
     <name>Genome Damage and Stability Centre</name>
     <url>http://www.sussex.ac.uk/gdsc/</url>
   </organization>
-  <description>Fiji plugins providing CTC measures for quantitative evaluation
-        of biomedical tracking in general.</description>
+  <description>Fiji plugins with supplementary functionality to CTC measures for
+      quantitative evaluation of biomedical tracking.</description>
 
   <licenses>
     <license>

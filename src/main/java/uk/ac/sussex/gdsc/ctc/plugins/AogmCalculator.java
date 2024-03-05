@@ -1,7 +1,7 @@
 /*-
  * #%L
- * Fiji plugins providing CTC measures for quantitative evaluation
- *         of biomedical tracking in general.
+ * Fiji plugins with supplementary functionality to CTC measures for
+ *       quantitative evaluation of biomedical tracking.
  * %%
  * Copyright (C) 2024 Alex Herbert
  * %%
@@ -73,7 +73,7 @@ final class AogmCalculator {
 
   /**
    * Creates the calculator.
-   * 
+   *
    * <p>Accepts additional parameters as these are package-private and cannot be obtained from the
    * TRA instance. The penalty parameters are used to compute the AOGM empty score.
    *

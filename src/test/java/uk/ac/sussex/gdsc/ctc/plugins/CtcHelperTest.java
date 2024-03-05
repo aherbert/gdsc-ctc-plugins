@@ -1,7 +1,7 @@
 /*-
  * #%L
- * Fiji plugins providing CTC measures for quantitative evaluation
- *         of biomedical tracking in general.
+ * Fiji plugins with supplementary functionality to CTC measures for
+ *       quantitative evaluation of biomedical tracking.
  * %%
  * Copyright (C) 2024 Alex Herbert
  * %%
