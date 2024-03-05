@@ -1,5 +1,10 @@
-Welcome
--------
+GDCS CTC Plugins
+----------------
+
+[![Java CI](https://github.com/aherbert/gdsc-ctc-plugins/actions/workflows/build.yml/badge.svg)](https://github.com/aherbert/gdsc-ctc-plugins/actions/workflows/build.yml)
+[![Coverage Status](https://codecov.io/gh/aherbert/gdsc-ctc-plugins/branch/main/graph/badge.svg)](https://app.codecov.io/gh/aherbert/gdsc-ctc-plugins)
+[![License](http://img.shields.io/:license-mit-blue.svg)](https://opensource.org/license/mit)
+
 This is a repository with [Fiji](http://fiji.sc) plugins related to
 [Cell Tracking Challenge](http://www.celltrackingchallenge.net).
 
