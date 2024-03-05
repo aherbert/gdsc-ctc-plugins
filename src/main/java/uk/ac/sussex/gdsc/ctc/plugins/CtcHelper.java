@@ -85,6 +85,16 @@ final class CtcHelper {
       }
     };
 
+    // We load this separately as we have to know every frame that contains a GT track
+    // and the cache.gt_tracks Track objects have package-private members
+    List<int[]> gtTracks;
+    try (BufferedReader r = Files.newBufferedReader(Paths.get(gtTracksPath))) {
+      gtTracks = CtcIo.loadTracksFile(r);
+    }
+    if (gtTracks.isEmpty()) {
+      throw new IllegalArgumentException("No reference (GT) track was found!");
+    }
+
     // Here we have to do all the work done in
     // TrackDataCache.calculate(String gtPath, String resPath)
     // The paths are typically directories containing:
@@ -94,12 +104,6 @@ final class CtcHelper {
     cache.LoadTrackFile(gtTracksPath, cache.gt_tracks);
     cache.LoadTrackFile(resTracksPath, cache.res_tracks);
 
-    // We load this again as we have to know every frame that contains a GT track
-    // and the cache.gt_tracks Track objects have package-private members
-    List<int[]> gtTracks;
-    try (BufferedReader r = Files.newBufferedReader(Paths.get(gtTracksPath))) {
-      gtTracks = CtcIo.loadTracksFile(r);
-    }
     // BitSet that can store the maximum ground-truth ID
     final BitSet set = new BitSet(gtTracks.stream().mapToInt(x -> x[0]).max().orElse(1));
 
@@ -120,12 +124,7 @@ final class CtcHelper {
     }
     classfifyLabels(map.subList(from, map.size()), gtTracks, cache, time, set);
 
-    if (cache.levels.isEmpty()) {
-      throw new IllegalArgumentException("No reference (GT) image was found!");
-    }
-    if (cache.gt_tracks.isEmpty()) {
-      throw new IllegalArgumentException("No reference (GT) track was found!");
-    }
+    // No exceptions raised for cache.levels.isEmpty() as we had a non-empty map
 
     cache.DetectForks(cache.gt_tracks, cache.gt_forks);
     cache.DetectForks(cache.res_tracks, cache.res_forks);

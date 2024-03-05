@@ -35,6 +35,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import net.celltrackingchallenge.measures.TRA;
 import net.celltrackingchallenge.measures.TrackDataCache;
 import net.celltrackingchallenge.measures.TrackDataCache.TemporalLevel;
@@ -82,18 +84,27 @@ class CtcHelperTest {
     Assertions.assertFalse(s.contains(Integer.valueOf(v + 1)));
     Assertions.assertThrows(UnsupportedOperationException.class, () -> s.add(3));
     Assertions.assertThrows(UnsupportedOperationException.class, () -> s.add(v));
+    Assertions.assertThrows(UnsupportedOperationException.class, () -> s.remove(v));
     Assertions.assertThrows(UnsupportedOperationException.class, () -> s.clear());
     Assertions.assertEquals(s, s.clone());
+
     // Iterator
     for (final Integer i : s) {
       Assertions.assertEquals(v, i);
     }
+    Iterator<Integer> it = s.iterator();
+    it.next();
+    Assertions.assertThrows(NoSuchElementException.class, () -> it.next());
+    it.forEachRemaining(i -> Assertions.fail());
+    s.iterator().forEachRemaining(i -> Assertions.assertEquals(v, i));
+
     // Spliterator
     Assertions.assertArrayEquals(new int[] {v}, s.stream().mapToInt(x -> x).toArray());
 
     Assertions.assertArrayEquals(new Integer[] {v}, s.toArray());
     Assertions.assertArrayEquals(new Number[] {v}, s.toArray(new Number[0]));
 
+    // Equals
     final HashSet<Integer> other = new HashSet<>();
     other.add(v);
     Assertions.assertEquals(other, s);
@@ -119,13 +130,15 @@ class CtcHelperTest {
     Path resTracks = null;
     Path gtTracks = null;
     Path map = null;
+    Path empty = null;
     try {
       resTracks = Files.createTempFile("res", "txt");
       gtTracks = Files.createTempFile("gt", "txt");
       map = Files.createTempFile("map", "txt");
+      empty = Files.createTempFile("empty", "txt");
 
       Files.write(resTracks, Arrays.asList("1 0 2 0", "2 3 5 1"));
-      Files.write(gtTracks, Arrays.asList("10 0 1 0", "12 2 5 10"));
+      Files.write(gtTracks, Arrays.asList("10 0 1 0", "12 2 5 10", "44 1 1 0"));
       Files.write(map, Arrays.asList("1 0 10", "1 1 10", "1 2 12", "2 3 12", "2 4 12", "2 5 12"));
 
       final TRA tra = new TRA(LOG);
@@ -138,11 +151,19 @@ class CtcHelperTest {
 
       final String gtPath = gtTracks.toString();
       final String resPath = resTracks.toString();
+      final String mapPath = map.toString();
       final double aogm = tra.calculate(gtPath, resPath,
-          CtcHelper.loadTrackDataCache(LOG, gtPath, resPath, map.toString()));
+          CtcHelper.loadTrackDataCache(LOG, gtPath, resPath, mapPath));
 
-      // Expected: 2 x wrong semantics (1.35)
-      Assertions.assertEquals(2 * 1.35, aogm);
+      // Expected: 2 x wrong semantics (1.35) : 1 false nagative
+      Assertions.assertEquals(2 * 1.35 + 10, aogm);
+
+      // Check empty files raise exceptions
+      String emptyFile = empty.toString();
+      Assertions.assertThrows(IllegalArgumentException.class,
+          () -> CtcHelper.loadTrackDataCache(LOG, gtPath, resPath, emptyFile));
+      Assertions.assertThrows(IllegalArgumentException.class,
+          () -> CtcHelper.loadTrackDataCache(LOG, emptyFile, resPath, mapPath));
 
     } finally {
       if (resTracks != null) {
@@ -153,6 +174,9 @@ class CtcHelperTest {
       }
       if (map != null) {
         Files.delete(map);
+      }
+      if (empty != null) {
+        Files.delete(empty);
       }
     }
   }
