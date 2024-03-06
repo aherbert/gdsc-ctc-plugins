@@ -153,11 +153,14 @@ public class FileMatchedAogmMeasureBatch implements Command {
 
       // do the calculation
       // Here we use our own calculator that caches ground-truth information for re-use.
-      final AogmCalculator calc = AogmCalculator.create(gtPath.getPath(), tra, log, p2, p5);
+      final AogmCalculator calc = AogmCalculator.create(gtPath.getPath(), tra, log);
 
       // Header
       pw.println("# GT = " + gtPath.toString());
-      pw.println("# AOGM_e = " + calc.getAogmEmpty());
+      pw.println("# GT nodes = " + calc.getGtNodes());
+      pw.println("# GT edges = " + calc.getGtEdges());
+      final double aogme = calc.getGtNodes() * p2 + calc.getGtEdges() * p5;
+      pw.println("# AOGM_e = " + aogme);
       pw.println("# Result dir = " + resFolderPath.toString());
       pw.println("Tracks,AOGM,TRA");
 
@@ -173,7 +176,7 @@ public class FileMatchedAogmMeasureBatch implements Command {
             pw.print(',');
             pw.print(aogm);
             pw.print(',');
-            pw.println(calc.getTra(aogm));
+            pw.println(AogmCalculator.getTra(aogm, aogme));
           } catch (final IOException e) {
             throw new UncheckedIOException(e);
           }

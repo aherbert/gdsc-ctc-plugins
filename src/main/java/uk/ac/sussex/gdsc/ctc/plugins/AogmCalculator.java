@@ -47,8 +47,10 @@ final class AogmCalculator {
   private final TRA tra;
   /** The cache. */
   private final TrackDataCache cache;
-  /** AOGM empty score. */
-  private final double aogme;
+  /** ground-truth nodes. */
+  private final long gtNodes;
+  /** ground-truth edges. */
+  private final long gtEdges;
   /** BitSet for working. */
   private final BitSet set;
 
@@ -58,13 +60,17 @@ final class AogmCalculator {
    * @param gtTracks the ground-truth tracks
    * @param tra the TRA instance
    * @param cache the cache
+   * @param gtNodes the number of ground truth nodes
+   * @param gtEdges the number of ground truth edges
    * @param aogme the AOGM empty score
    */
-  private AogmCalculator(List<int[]> gtTracks, TRA tra, TrackDataCache cache, double aogme) {
+  private AogmCalculator(List<int[]> gtTracks, TRA tra, TrackDataCache cache,
+      long gtNodes, long gtEdges) {
     this.gtTracks = gtTracks;
     this.tra = tra;
     this.cache = cache;
-    this.aogme = aogme;
+    this.gtNodes = gtNodes;
+    this.gtEdges = gtEdges;
     // Always compute the AOGM
     this.tra.doAOGM = true;
     // BitSet that can store the maximum ground-truth ID
@@ -80,12 +86,10 @@ final class AogmCalculator {
    * @param gtTracksPath the ground truth tracks
    * @param tra TRA class (configured for logging and with the appropriate penalty)
    * @param log the log service
-   * @param fn the false negative penalty
-   * @param ea the edge add penalty
    * @return the calculator
    * @throws IOException Signals that an I/O exception has occurred.
    */
-  static AogmCalculator create(String gtTracksPath, TRA tra, LogService log, double fn, double ea)
+  static AogmCalculator create(String gtTracksPath, TRA tra, LogService log)
       throws IOException {
     List<int[]> gtTracks;
     try (BufferedReader r = Files.newBufferedReader(Paths.get(gtTracksPath))) {
@@ -120,32 +124,42 @@ final class AogmCalculator {
       }
     }
     // adding nodes + adding edges
-    final double aogme = fn * (sum + gtTracks.size()) + ea * (sum + numPar);
+    final long gtNodes = sum + gtTracks.size();
+    final long gtEdges = sum + numPar;
 
-    return new AogmCalculator(gtTracks, tra, cache, aogme);
+    return new AogmCalculator(gtTracks, tra, cache, gtNodes, gtEdges);
   }
 
   /**
-   * Gets the AOGM empty score. The TRA score is:
+   * Gets the number of ground-truth nodes.
+   *
+   * @return the nodes
+   */
+  long getGtNodes() {
+    return gtNodes;
+  }
+
+  /**
+   * Gets the number of ground-truth edges.
+   *
+   * @return the edges
+   */
+  long getGtEdges() {
+    return gtEdges;
+  }
+
+  /**
+   * Gets the TRA score:
    *
    * <pre>
    * max(0, 1 - aogm / aogme)
    * </pre>
    *
-   * @return the AOGM empty
-   */
-  double getAogmEmpty() {
-    return aogme;
-  }
-
-  /**
-   * Gets the TRA score.
-   *
    * @param aogm the AOGM
+   * @param aogme the AOGM empty
    * @return the TRA
-   * @see #getAogmEmpty()
    */
-  double getTra(double aogm) {
+  static double getTra(double aogm, double aogme) {
     return Math.max(0, 1 - aogm / aogme);
   }
 

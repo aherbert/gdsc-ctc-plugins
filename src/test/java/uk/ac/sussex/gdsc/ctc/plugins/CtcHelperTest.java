@@ -226,7 +226,7 @@ class CtcHelperTest {
     final String resPath = this.getClass().getResource("res_track.txt").getPath();
     final String nodeMapping = this.getClass().getResource("map.txt").getPath();
 
-    final AogmCalculator calc = AogmCalculator.create(gtPath, tra, LOG, 10, 1.5);
+    final AogmCalculator calc = AogmCalculator.create(gtPath, tra, LOG);
 
     // Repeatable
     for (int i = 0; i < 2; i++) {
@@ -234,14 +234,15 @@ class CtcHelperTest {
 
       // Validated result using original CTC ground-truth and result data
       Assertions.assertEquals(20, aogm);
-      Assertions.assertEquals(29926.5, calc.getAogmEmpty());
-      Assertions.assertEquals(0.9993316959885051, calc.getTra(aogm));
+      final double aogme = 10 * calc.getGtNodes() + 1.5 * calc.getGtEdges();
+      Assertions.assertEquals(29926.5, aogme);
+      Assertions.assertEquals(0.9993316959885051, AogmCalculator.getTra(aogm, aogme));
     }
 
     // Check empty files raise exceptions
     String emptyFile = empty.toString();
     Assertions.assertThrows(IllegalArgumentException.class,
-        () -> AogmCalculator.create(emptyFile, tra, LOG, 10, 1.5));
+        () -> AogmCalculator.create(emptyFile, tra, LOG));
     Assertions.assertThrows(IllegalArgumentException.class,
         () -> calc.calculate(resPath, emptyFile));
   }
