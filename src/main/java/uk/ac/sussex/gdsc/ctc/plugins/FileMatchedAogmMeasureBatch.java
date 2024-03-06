@@ -34,6 +34,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.stream.Stream;
 import net.celltrackingchallenge.measures.TRA;
 import org.scijava.command.Command;
@@ -159,10 +160,16 @@ public class FileMatchedAogmMeasureBatch implements Command {
       pw.println("# GT = " + gtPath.toString());
       pw.println("# GT nodes = " + calc.getGtNodes());
       pw.println("# GT edges = " + calc.getGtEdges());
+      pw.println("# Penalty [ns, fn, fp, ed, ea, ec] = "
+          + Arrays.toString(new double[] {ns, fn, fp, ed, ea, ec}));
       final double aogme = calc.getGtNodes() * fn + calc.getGtEdges() * ea;
       pw.println("# AOGM_e = " + aogme);
       pw.println("# Result dir = " + resFolderPath.toString());
-      pw.println("Tracks,AOGM,TRA");
+      pw.print("Tracks,AOGM,TRA");
+      if (doLogReports) {
+        pw.print(",NS,FN,FP,ED,EA,EC");
+      }
+      pw.println();
 
       // Iterate over the [track.txt, track.map.txt] pairs
       // Processing inside the stream throws unchecked IO exceptions
@@ -176,7 +183,26 @@ public class FileMatchedAogmMeasureBatch implements Command {
             pw.print(',');
             pw.print(aogm);
             pw.print(',');
-            pw.println(AogmCalculator.getTra(aogm, aogme));
+            pw.print(AogmCalculator.getTra(aogm, aogme));
+            if (doLogReports) {
+              // Use the log resorts to collect the count of each error.
+              // We must ignore the header.
+              // Note: Ideally we could get these without logging but this requires
+              // a code change in the TRA class to count these errors.
+              pw.print(',');
+              pw.print(tra.logNS.size() - 1);
+              pw.print(',');
+              pw.print(tra.logFN.size() - 1);
+              pw.print(',');
+              pw.print(tra.logFP.size() - 1);
+              pw.print(',');
+              pw.print(tra.logED.size() - 1);
+              pw.print(',');
+              pw.print(tra.logEA.size() - 1);
+              pw.print(',');
+              pw.print(tra.logEC.size() - 1);
+            }
+            pw.println();
           } catch (final IOException e) {
             throw new UncheckedIOException(e);
           }

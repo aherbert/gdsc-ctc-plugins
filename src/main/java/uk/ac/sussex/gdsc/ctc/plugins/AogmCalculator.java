@@ -214,6 +214,15 @@ final class AogmCalculator {
     cache.res_forks.clear();
     cache.DetectForks(cache.res_tracks, cache.res_forks);
 
+    // Clear old logs
+    tra.logNS.clear();
+    tra.logFN.clear();
+    tra.logFP.clear();
+    tra.logED.clear();
+    tra.logEA.clear();
+    tra.logEC.clear();
+    tra.logMatch.clear();
+
     return tra.calculate(null, null, cache);
   }
 }
