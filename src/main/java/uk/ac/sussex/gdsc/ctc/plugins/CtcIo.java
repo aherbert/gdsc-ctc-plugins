@@ -41,7 +41,7 @@ final class CtcIo {
   private CtcIo() {}
 
   /**
-   * Load the node map from {@code in}. Expects records of: resID time gtID.
+   * Load the node map from {@code in}. Expects records of: time resID gtID.
    *
    * <pre>
    * 0 1 42
@@ -64,12 +64,12 @@ final class CtcIo {
         final int i1 = line.indexOf(' ');
         final int i2 = line.indexOf(' ', i1 + 1);
         if ((i1 | i2) < 0) {
-          throw new IOException("Invalid [id, t, class] record: " + line);
+          throw new IOException("Invalid [time resID gtID] record: " + line);
         }
-        final int id = Integer.parseInt(line.substring(0, i1));
-        final int t = Integer.parseInt(line.substring(i1 + 1, i2));
-        final int c = Integer.parseInt(line.substring(i2 + 1));
-        list.add(new int[] {id, t, c});
+        final int time = Integer.parseInt(line.substring(0, i1));
+        final int resId = Integer.parseInt(line.substring(i1 + 1, i2));
+        final int gtId = Integer.parseInt(line.substring(i2 + 1));
+        list.add(new int[] {time, resId, gtId});
       }
     } catch (final NumberFormatException e) {
       throw new IOException(e);

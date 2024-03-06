@@ -110,15 +110,15 @@ final class CtcHelper {
     // This is where we avoid the call to ClassifyLabels for each
     // frame in the GT and result masks and use the node mapping.
 
-    // Process records [resID t gtID] in time order:
-    map.sort(Comparator.comparingInt(x -> x[1]));
+    // Process records [t resID gtID] in time order:
+    map.sort(Comparator.comparingInt(x -> x[0]));
     int from = 0;
-    int time = map.get(from)[1];
+    int time = map.get(from)[0];
     for (int i = 1; i < map.size(); i++) {
       final int[] x = map.get(i);
-      if (x[1] > time) {
+      if (x[0] > time) {
         classfifyLabels(map.subList(from, i), gtTracks, cache, time, set);
-        time = x[1];
+        time = x[0];
         from = i;
       }
     }
@@ -166,8 +166,8 @@ final class CtcHelper {
     gtSet.clear();
     for (int i = 0; i < map.size(); i++) {
       int[] x = map.get(i);
+      resLabel[i] = x[1];
       gtLabel[i] = x[2];
-      resLabel[i] = x[0];
       gtMatch[i] = i;
       // Cannot use Collections.singleton as the temporalLevel requires a HashSet.
       // So create a special singleton.

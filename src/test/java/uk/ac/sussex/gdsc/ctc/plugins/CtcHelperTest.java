@@ -153,7 +153,7 @@ class CtcHelperTest {
 
       Files.write(resTracks, Arrays.asList("1 0 2 0", "2 3 5 1"));
       Files.write(gtTracks, Arrays.asList("10 0 1 0", "12 2 5 10", "44 1 1 0"));
-      Files.write(map, Arrays.asList("1 0 10", "1 1 10", "1 2 12", "2 3 12", "2 4 12", "2 5 12"));
+      Files.write(map, Arrays.asList("0 1 10", "1 1 10", "2 1 12", "3 2 12", "4 2 12", "5 2 12"));
 
       final TRA tra = new TRA(LOG);
 
@@ -204,7 +204,7 @@ class CtcHelperTest {
 
     final String gtPath = this.getClass().getResource("man_track.txt").getPath();
     final String resPath = this.getClass().getResource("res_track.txt").getPath();
-    final String nodeMapping = this.getClass().getResource("map.txt").getPath();
+    final String nodeMapping = this.getClass().getResource("res_track.map.txt").getPath();
     final double aogm =
         tra.calculate(null, null, CtcHelper.loadTrackDataCache(LOG, gtPath, resPath, nodeMapping));
 
@@ -224,7 +224,7 @@ class CtcHelperTest {
 
     final String gtPath = this.getClass().getResource("man_track.txt").getPath();
     final String resPath = this.getClass().getResource("res_track.txt").getPath();
-    final String nodeMapping = this.getClass().getResource("map.txt").getPath();
+    final String nodeMapping = this.getClass().getResource("res_track.map.txt").getPath();
 
     final AogmCalculator calc = AogmCalculator.create(gtPath, tra, LOG);
 
