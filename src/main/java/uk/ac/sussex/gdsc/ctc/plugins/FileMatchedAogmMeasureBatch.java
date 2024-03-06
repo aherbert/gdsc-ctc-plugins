@@ -158,11 +158,11 @@ public class FileMatchedAogmMeasureBatch implements Command {
 
       // Header
       pw.println("# GT = " + gtPath.toString());
-      pw.println("# GT nodes = " + calc.getGtNodes());
-      pw.println("# GT edges = " + calc.getGtEdges());
+      pw.println("# GT nodes = " + calc.getGtNodeCount());
+      pw.println("# GT edges = " + calc.getGtEdgeCount());
       pw.println("# Penalty [ns, fn, fp, ed, ea, ec] = "
           + Arrays.toString(new double[] {ns, fn, fp, ed, ea, ec}));
-      final double aogme = calc.getGtNodes() * fn + calc.getGtEdges() * ea;
+      final double aogme = calc.getGtNodeCount() * fn + calc.getGtEdgeCount() * ea;
       pw.println("# AOGM_e = " + aogme);
       pw.println("# Result dir = " + resFolderPath.toString());
       pw.print("Tracks,AOGM,TRA");

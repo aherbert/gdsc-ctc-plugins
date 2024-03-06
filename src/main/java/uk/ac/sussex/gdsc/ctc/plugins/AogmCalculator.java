@@ -133,18 +133,18 @@ final class AogmCalculator {
   /**
    * Gets the number of ground-truth nodes.
    *
-   * @return the nodes
+   * @return the node count
    */
-  long getGtNodes() {
+  long getGtNodeCount() {
     return gtNodes;
   }
 
   /**
    * Gets the number of ground-truth edges.
    *
-   * @return the edges
+   * @return the edge count
    */
-  long getGtEdges() {
+  long getGtEdgeCount() {
     return gtEdges;
   }
 

@@ -234,7 +234,7 @@ class CtcHelperTest {
 
       // Validated result using original CTC ground-truth and result data
       Assertions.assertEquals(20, aogm);
-      final double aogme = 10 * calc.getGtNodes() + 1.5 * calc.getGtEdges();
+      final double aogme = 10 * calc.getGtNodeCount() + 1.5 * calc.getGtEdgeCount();
       Assertions.assertEquals(29926.5, aogme);
       Assertions.assertEquals(0.9993316959885051, AogmCalculator.getTra(aogm, aogme));
     }
