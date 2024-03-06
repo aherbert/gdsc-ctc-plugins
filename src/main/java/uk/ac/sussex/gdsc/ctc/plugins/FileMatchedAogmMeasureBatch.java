@@ -82,24 +82,24 @@ public class FileMatchedAogmMeasureBatch implements Command {
   private String penaltyModel;
 
   @Parameter(label = "Splitting operations penalty:", min = "0.0", callback = "onWeightChange")
-  private Double p1 = 5.0;
+  private double ns = 5.0;
 
   @Parameter(label = "False negative vertices penalty:", min = "0.0", callback = "onWeightChange")
-  private Double p2 = 10.0;
+  private double fn = 10.0;
 
   @Parameter(label = "False positive vertices penalty:", min = "0.0", callback = "onWeightChange")
-  private Double p3 = 1.0;
+  private double fp = 1.0;
 
   @Parameter(label = "Redundant edges to be deleted penalty:", min = "0.0",
       callback = "onWeightChange")
-  private Double p4 = 1.0;
+  private double ed = 1.0;
 
   @Parameter(label = "Edges to be added penalty:", min = "0.0", callback = "onWeightChange")
-  private Double p5 = 1.5;
+  private double ea = 1.5;
 
   @Parameter(label = "Edges with wrong semantics penalty:", min = "0.0",
       callback = "onWeightChange")
-  private Double p6 = 1.0;
+  private double ec = 1.0;
 
   @Parameter(label = "Consistency check of input data:",
       description = "Checks multiple consistency-oriented criteria on both input and GT data.")
@@ -116,14 +116,14 @@ public class FileMatchedAogmMeasureBatch implements Command {
   @SuppressWarnings("unused")
   private void onPenaltyChange() {
     if (penaltyModel.startsWith("Cell Tracking Challenge")) {
-      p1 = 5.0;
-      p2 = 10.0;
-      p3 = 1.0;
-      p4 = 1.0;
-      p5 = 1.5;
-      p6 = 1.0;
+      ns = 5.0;
+      fn = 10.0;
+      fp = 1.0;
+      ed = 1.0;
+      ea = 1.5;
+      ec = 1.0;
     } else if (penaltyModel.startsWith("some other future preset")) {
-      p1 = 99.0;
+      ns = 99.0;
     }
   }
 
@@ -148,7 +148,7 @@ public class FileMatchedAogmMeasureBatch implements Command {
       tra.doMatchingReports = doMatchingReports;
 
       // also the AOGM weights
-      final TRA.PenaltyConfig penalty = tra.new PenaltyConfig(p1, p2, p3, p4, p5, p6);
+      final TRA.PenaltyConfig penalty = tra.new PenaltyConfig(ns, fn, fp, ed, ea, ec);
       tra.penalty = penalty;
 
       // do the calculation
@@ -159,7 +159,7 @@ public class FileMatchedAogmMeasureBatch implements Command {
       pw.println("# GT = " + gtPath.toString());
       pw.println("# GT nodes = " + calc.getGtNodes());
       pw.println("# GT edges = " + calc.getGtEdges());
-      final double aogme = calc.getGtNodes() * p2 + calc.getGtEdges() * p5;
+      final double aogme = calc.getGtNodes() * fn + calc.getGtEdges() * ea;
       pw.println("# AOGM_e = " + aogme);
       pw.println("# Result dir = " + resFolderPath.toString());
       pw.println("Tracks,AOGM,TRA");
