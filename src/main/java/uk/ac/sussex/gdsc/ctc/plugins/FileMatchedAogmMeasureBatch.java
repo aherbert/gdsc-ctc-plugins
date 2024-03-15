@@ -185,7 +185,7 @@ public class FileMatchedAogmMeasureBatch implements Command {
             pw.print(',');
             pw.print(AogmCalculator.getTra(aogm, aogme));
             if (doLogReports) {
-              // Use the log resorts to collect the count of each error.
+              // Use the log reports to collect the count of each error.
               // We must ignore the header.
               // Note: Ideally we could get these without logging but this requires
               // a code change in the TRA class to count these errors.

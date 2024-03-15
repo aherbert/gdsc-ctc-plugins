@@ -162,6 +162,17 @@ public class FileMatchedAogmMeasure implements Command {
       aogm = tra.calculate(null, null,
           CtcHelper.loadTrackDataCache(log, gtTracks, resTracks, resMap));
 
+      if (doLogReports) {
+        // Use the log reports to collect the count of each error.
+        log.info(String.format("ns=%d; fn=%d; fp=%d; ed=%d; ea=%d; ec=%d",
+          tra.logNS.size() - 1,
+          tra.logFN.size() - 1,
+          tra.logFP.size() - 1,
+          tra.logED.size() - 1,
+          tra.logEA.size() - 1,
+          tra.logEC.size() - 1));
+      }
+
       // do not report anything explicitly (unless special format for parsing is
       // desired) as ItemIO.OUTPUT will make it output automatically
     } catch (final RuntimeException e) {
