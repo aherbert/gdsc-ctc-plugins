@@ -212,6 +212,7 @@ public class FileMatchedAogmMeasureBatch implements Command {
         }
       });
 
+      log.info("Saved AOGM result file: " + resultPath.toPath());
     } catch (final RuntimeException e) {
       log.error("AOGM problem: " + e.getMessage(), e);
     } catch (final Exception e) {
