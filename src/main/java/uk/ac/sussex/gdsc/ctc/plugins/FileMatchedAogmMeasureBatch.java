@@ -35,6 +35,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.DoubleSummaryStatistics;
+import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 import net.celltrackingchallenge.measures.TRA;
 import org.scijava.command.Command;
@@ -171,8 +173,11 @@ public class FileMatchedAogmMeasureBatch implements Command {
       }
       pw.println();
 
-      // Iterate over the [track.txt, track.map.txt] pairs
-      // Processing inside the stream throws unchecked IO exceptions
+      // Iterate over the [track.txt, track.map.txt] pairs.
+      // Processing inside the stream throws unchecked IO exceptions.
+      // Track the scores
+      final DoubleStream.Builder builder1 = DoubleStream.builder();
+      final DoubleStream.Builder builder2 = DoubleStream.builder();
       files.map(Path::toString).filter(s -> s.endsWith(".map.txt")).forEach(mapPath -> {
         // Find corresponding .txt file
         final String resPath = mapPath.replace(".map.txt", ".txt");
@@ -183,7 +188,10 @@ public class FileMatchedAogmMeasureBatch implements Command {
             pw.print(',');
             pw.print(aogm);
             pw.print(',');
-            pw.print(AogmCalculator.getTra(aogm, aogme));
+            final double traScore = AogmCalculator.getTra(aogm, aogme);
+            pw.print(traScore);
+            builder1.accept(aogm);
+            builder2.accept(traScore);
             if (doLogReports) {
               // Use the log reports to collect the count of each error.
               // We must ignore the header.
@@ -211,6 +219,15 @@ public class FileMatchedAogmMeasureBatch implements Command {
               String.format("Mapping file (%s) is missing track file (%s)", mapPath, resPath));
         }
       });
+
+      // Summary stats
+      final DoubleSummaryStatistics stats1 = builder1.build().summaryStatistics();
+      final DoubleSummaryStatistics stats2 = builder2.build().summaryStatistics();
+      log.info("n=" + stats2.getCount());
+      log.info(String.format("AOGM max=%s; mean=%.5f; min=%s", stats1.getMax(), stats1.getAverage(),
+          stats1.getMin()));
+      log.info(String.format("TRA  min=%.5f; mean=%.5f; max=%.5f", stats2.getMin(),
+          stats2.getAverage(), stats2.getMax()));
 
       log.info("Saved AOGM result file: " + resultPath.toPath());
     } catch (final RuntimeException e) {
