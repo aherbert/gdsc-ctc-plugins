@@ -29,12 +29,13 @@ package uk.ac.sussex.gdsc.ctc.plugins;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.DoubleSummaryStatistics;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
@@ -137,41 +138,33 @@ public class FileMatchedAogmMeasureBatch implements Command {
 
   @Override
   public void run() {
-    try (BufferedWriter bw = Files.newBufferedWriter(resultPath.toPath());
-        PrintWriter pw = new PrintWriter(bw);
-        Stream<Path> files = Files.list(resFolderPath.toPath())) {
+    // start up the worker class
+    final TRA tra = new TRA(log);
 
-      // start up the worker class
-      final TRA tra = new TRA(log);
+    // set up its operational details
+    // Note: the calculator always computes the AOGM
+    tra.doConsistencyCheck = doConsistencyCheck;
+    tra.doLogReports = doLogReports;
+    tra.doMatchingReports = doMatchingReports;
 
-      // set up its operational details
-      // Note: the calculator always computes the AOGM
-      tra.doConsistencyCheck = doConsistencyCheck;
-      tra.doLogReports = doLogReports;
-      tra.doMatchingReports = doMatchingReports;
+    // also the AOGM weights
+    final TRA.PenaltyConfig penalty = tra.new PenaltyConfig(ns, fn, fp, ed, ea, ec);
+    tra.penalty = penalty;
 
-      // also the AOGM weights
-      final TRA.PenaltyConfig penalty = tra.new PenaltyConfig(ns, fn, fp, ed, ea, ec);
-      tra.penalty = penalty;
+    // Collect the results to allow sorting them for convenience
+    final ArrayList<AogmResult> results = new ArrayList<>();
+    long gtNodes;
+    long gtEdges;
+    double aogme;
+
+    try (Stream<Path> files = Files.list(resFolderPath.toPath())) {
 
       // do the calculation
       // Here we use our own calculator that caches ground-truth information for re-use.
       final AogmCalculator calc = AogmCalculator.create(gtPath.getPath(), tra, log);
-
-      // Header
-      pw.println("# GT = " + gtPath.toString());
-      pw.println("# GT nodes = " + calc.getGtNodeCount());
-      pw.println("# GT edges = " + calc.getGtEdgeCount());
-      pw.println("# Penalty [ns, fn, fp, ed, ea, ec] = "
-          + Arrays.toString(new double[] {ns, fn, fp, ed, ea, ec}));
-      final double aogme = calc.getGtNodeCount() * fn + calc.getGtEdgeCount() * ea;
-      pw.println("# AOGM_e = " + aogme);
-      pw.println("# Result dir = " + resFolderPath.toString());
-      pw.print("Tracks,AOGM,TRA");
-      if (doLogReports) {
-        pw.print(",NS,FN,FP,ED,EA,EC");
-      }
-      pw.println();
+      gtNodes = calc.getGtNodeCount();
+      gtEdges = calc.getGtEdgeCount();
+      aogme = gtNodes * fn + gtEdges * ea;
 
       // Iterate over the [track.txt, track.map.txt] pairs.
       // Processing inside the stream throws unchecked IO exceptions.
@@ -184,33 +177,26 @@ public class FileMatchedAogmMeasureBatch implements Command {
         if (Files.isReadable(Paths.get(resPath))) {
           try {
             final double aogm = calc.calculate(resPath, mapPath);
-            pw.print(Paths.get(resPath).getFileName());
-            pw.print(',');
-            pw.print(aogm);
-            pw.print(',');
             final double traScore = AogmCalculator.getTra(aogm, aogme);
-            pw.print(traScore);
-            builder1.accept(aogm);
-            builder2.accept(traScore);
+            final StringBuilder sb = new StringBuilder(256);
+            sb.append(Paths.get(resPath).getFileName())
+              .append(',').append(aogm)
+              .append(',').append(traScore);
             if (doLogReports) {
               // Use the log reports to collect the count of each error.
               // We must ignore the header.
               // Note: Ideally we could get these without logging but this requires
               // a code change in the TRA class to count these errors.
-              pw.print(',');
-              pw.print(tra.logNS.size() - 1);
-              pw.print(',');
-              pw.print(tra.logFN.size() - 1);
-              pw.print(',');
-              pw.print(tra.logFP.size() - 1);
-              pw.print(',');
-              pw.print(tra.logED.size() - 1);
-              pw.print(',');
-              pw.print(tra.logEA.size() - 1);
-              pw.print(',');
-              pw.print(tra.logEC.size() - 1);
+              sb.append(',').append(tra.logNS.size() - 1)
+                .append(',').append(tra.logFN.size() - 1)
+                .append(',').append(tra.logFP.size() - 1)
+                .append(',').append(tra.logED.size() - 1)
+                .append(',').append(tra.logEA.size() - 1)
+                .append(',').append(tra.logEC.size() - 1);
             }
-            pw.println();
+            builder1.accept(aogm);
+            builder2.accept(traScore);
+            results.add(new AogmResult(traScore, sb.toString()));
           } catch (final IOException e) {
             throw new UncheckedIOException(e);
           }
@@ -228,12 +214,61 @@ public class FileMatchedAogmMeasureBatch implements Command {
           stats1.getMin()));
       log.info(String.format("TRA  min=%.5f; mean=%.5f; max=%.5f", stats2.getMin(),
           stats2.getAverage(), stats2.getMax()));
-
-      log.info("Saved AOGM result file: " + resultPath.toPath());
-    } catch (final RuntimeException e) {
-      log.error("AOGM problem: " + e.getMessage(), e);
     } catch (final Exception e) {
       log.error("AOGM error: " + e.getMessage(), e);
+      return;
+    }
+
+    // Sort
+    results.sort(Comparator.comparingDouble(AogmResult::getScore).reversed());
+
+    try (BufferedWriter bw = Files.newBufferedWriter(resultPath.toPath())) {
+
+      // Header
+      bw.write("# GT = " + gtPath.toString());
+      bw.newLine();
+      bw.write("# GT nodes = " + gtNodes);
+      bw.newLine();
+      bw.write("# GT edges = " + gtEdges);
+      bw.newLine();
+      bw.write("# Penalty [ns, fn, fp, ed, ea, ec] = "
+          + Arrays.toString(new double[] {ns, fn, fp, ed, ea, ec}));
+      bw.newLine();
+      bw.write("# AOGM_e = " + aogme);
+      bw.newLine();
+      bw.write("# Result dir = " + resFolderPath.toString());
+      bw.newLine();
+      bw.write("Tracks,AOGM,TRA");
+      if (doLogReports) {
+        bw.write(",NS,FN,FP,ED,EA,EC");
+      }
+      bw.newLine();
+
+      for (final AogmResult r : results) {
+        bw.append(r.result);
+        bw.newLine();
+      }
+
+      log.info("Saved AOGM result file: " + resultPath.toPath());
+    } catch (final Exception e) {
+      log.error("AOGM error: " + e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Data class for sorting AOGM results.
+   */
+  private static class AogmResult {
+    final double score;
+    final String result;
+
+    AogmResult(double score, String result) {
+      this.score = score;
+      this.result = result;
+    }
+
+    double getScore() {
+      return score;
     }
   }
 }
