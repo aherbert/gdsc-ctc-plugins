@@ -160,7 +160,7 @@ final class AogmCalculator {
    * @return the TRA
    */
   static double getTra(double aogm, double aogme) {
-    return Math.max(0, 1 - aogm / aogme);
+    return Math.max(0, (aogme - aogm) / aogme);
   }
 
   /**
