@@ -13,3 +13,19 @@ The plugins supplement the functionality of the
 alternative methods to load the object graphs used to compute the CTC measures.
 
 See also [the CTC measures repository](https://github.com/CellTrackingChallenge/measures).
+
+Installation
+------------
+
+The plugin can be installed into a ImageJ instance using Maven. This requires a
+Java Development Kit (JDK) and [Maven](https://maven.apache.org/).
+
+To install into an ImageJ instance at `/usr/local/fiji`:
+
+    mvn package scijava:populate-app -Dscijava.app.directory=/usr/local/fiji
+
+This will build the plugin Java archive (jar) and copy it and all the dependencies into
+the ImageJ location. The plugins will appear at:
+
+ * `Plugins > Tracking > AOGM: Tracking measure (mapped)`
+ * `Plugins > Tracking > AOGM: Tracking measure (mapped batch)`
