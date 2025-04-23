@@ -71,7 +71,6 @@
     <license.copyrightOwners>Alex Herbert</license.copyrightOwners>
     <!-- Dependency versions -->
     <ctc.measures.version>1.0.3</ctc.measures.version>
-    <junit.version>5.10.3</junit.version>
   </properties>
 
   <repositories>
@@ -80,18 +79,6 @@
       <url>https://maven.scijava.org/content/groups/public</url>
     </repository>
   </repositories>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.junit</groupId>
-        <artifactId>junit-bom</artifactId>
-        <version>${junit.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <dependencies>
     <dependency>
@@ -116,7 +103,7 @@
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
+      <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
