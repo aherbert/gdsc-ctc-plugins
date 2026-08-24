@@ -67,6 +67,7 @@
   </contributors>
 
   <properties>
+    <scijava.jvm.version>1.8</scijava.jvm.version>
     <license.licenseName>mit</license.licenseName>
     <license.copyrightOwners>Alex Herbert</license.copyrightOwners>
     <!-- Dependency versions -->
